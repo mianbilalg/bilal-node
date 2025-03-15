@@ -1,0 +1,31 @@
+trigger:
+- master
+
+pool:
+  name: Default  
+  demands:
+  - agent.name -equals test-vm  
+
+steps:
+- script: echo "Starting Pipeline..."
+  displayName: 'Start Pipeline'
+
+# Docker Build Step
+- task: Docker@2
+  displayName: 'Build and tag Docker image'
+  inputs:
+    command: build
+    Dockerfile: './Dockerfile'  
+    tags: 'latest'
+    repository: node-app
+
+# Stop & Remove Old Container (if exists)
+- script: |
+    docker stop node-app-container || true
+    docker rm node-app-container || true
+  displayName: 'Stop and Remove Old Container'
+
+# Run New Container
+- script: |
+    docker run -d --name node-app-container -p 8000:8000 node-app:latest
+  displayName: 'Run New Docker Container'
