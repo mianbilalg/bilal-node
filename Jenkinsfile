@@ -1,34 +1,35 @@
-pipeline{
-    agent { label 'dev-server' }
-    
-    stages{
-        stage("Code Clone"){
-            steps{
-                echo "Code Clone Stage"
-                git url: "https://github.com/LondheShubham153/node-todo-cicd.git", branch: "master"
+pipeline {
+    agent any  // Run on any available agent
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'master', url: 'https://github.com/mianbilalg/bilal-node.git'
             }
         }
-        stage("Code Build & Test"){
-            steps{
-                echo "Code Build Stage"
-                sh "docker build -t node-app ."
+
+        stage('Build') {
+            steps {
+                sh 'echo "Building the project..."'
+                sh 'docker build -t bilal-node .'  // اگر آپ کا پروجیکٹ Gradle پر ہے، ورنہ اپنی بلڈ کمانڈ دیں
             }
         }
-        stage("Push To DockerHub"){
-            steps{
-                withCredentials([usernamePassword(
-                    credentialsId:"dockerHubCreds",
-                    usernameVariable:"dockerHubUser", 
-                    passwordVariable:"dockerHubPass")]){
-                sh 'echo $dockerHubPass | docker login -u $dockerHubUser --password-stdin'
-                sh "docker image tag node-app:latest ${env.dockerHubUser}/node-app:latest"
-                sh "docker push ${env.dockerHubUser}/node-app:latest"
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerHub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                    sh 'docker tag bilal-node $DOCKER_USER/bilal-node:latest'
+                    sh 'docker push $DOCKER_USER/bilal-node:latest'
                 }
             }
         }
-        stage("Deploy"){
-            steps{
-                sh "docker compose down && docker compose up -d --build"
+
+        stage('Deploy') {
+            steps {
+                sh 'echo "Deploying the project..."'
+                sh 'docker-compose down && docker-compose up -d'
+
             }
         }
     }
